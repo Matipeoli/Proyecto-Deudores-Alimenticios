@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: rdam_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rdam
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  backend:
+    build: ./portal-backend
+    container_name: rdam_backend
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: rdam
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      - postgres
+  frontend:
+    build: ./portal-frontend
+    container_name: rdam_frontend
+    ports:
+      - "3001:3001"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    depends_on:
+      - backend
+  pluspagos:
+    build: ./pasarela-pago
+    container_name: rdam_pluspagos
+    ports:
+      - "4000:4000"
+    environment:
+      - WEBHOOK_URL= http://backend:3000/api/pagos/webhook
+    depends_on:
+      - backend
+
+
+volumes:
+  postgres_data:
